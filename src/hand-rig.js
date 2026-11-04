@@ -60,11 +60,11 @@ export function prepareHand(scene, side, material) {
     bone.position.copy(position).applyQuaternion(basisQ).add(origin);
     bone.quaternion.copy(basisQ).multiply(rotation).multiply(inverseQ).multiply(bind[name].q);
   }
-  function curlChain(names, angles) {
+  function curlChain(names, angles, opposition = new THREE.Quaternion()) {
     let position = bind[names[0]].p.clone(), angle = 0;
     for (let i = 0; i < names.length; i++) {
       angle += angles[i] || 0;
-      const rotation = new THREE.Quaternion().setFromAxisAngle(axisX, -angle);
+      const rotation = opposition.clone().multiply(new THREE.Quaternion().setFromAxisAngle(axisX, -angle));
       setJoint(names[i], position, rotation);
       if (i + 1 < names.length) position = position.clone().add(
         bind[names[i + 1]].p.clone().sub(bind[names[i]].p).applyQuaternion(rotation),
@@ -83,7 +83,8 @@ export function prepareHand(scene, side, material) {
         index ? [0.18 + trigger * 0.22, 0.55 + trigger * 0.25, 0.35, 0] :
           support && rifle ? [0.48, 1.15, 0.65, 0] : [0.72, 1.28, 0.65, 0]);
     }
-    curlChain(['thumb-metacarpal', 'thumb-phalanx-proximal', 'thumb-phalanx-distal', 'thumb-tip'], [0.12, 0.36, 0.4, 0]);
+    const thumbOpposition = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), side === 'left' ? 0.6 : -0.6);
+    curlChain(['thumb-metacarpal', 'thumb-phalanx-proximal', 'thumb-phalanx-distal', 'thumb-tip'], [0.12, 0.36, 0.4, 0], thumbOpposition);
     root.updateMatrixWorld(true);
   }
   return { root, pose, bones };
@@ -97,27 +98,40 @@ export async function loadHands() {
   return { left: prepareHand(left.scene, 'left', glove), right: prepareHand(right.scene, 'right', glove) };
 }
 
-// Wrist, elbow and shoulder anchors give the sleeve a bent silhouette. Its
-// independent root can later be replaced by a full upper-arm IK chain.
-export function createForearm(wrist, elbow, radius, material, shoulder) {
-  const direction = wrist.clone().sub(elbow);
-  const geometry = new THREE.CylinderGeometry(radius * 0.63, radius, direction.length(), 24, 8);
+// A continuous sleeve rounds the elbow and follows the palm axis at the cuff.
+// Anchors still describe a fixed pose rather than a full arm skeleton / IK chain.
+export function createForearm(wrist, elbow, radius, material, shoulder, wristDirection) {
+  const direction = wristDirection.clone().normalize();
+  const upperDirection = elbow.clone().sub(shoulder).normalize();
+  const foreDirection = wrist.clone().sub(elbow).normalize();
+  const rounding = Math.min(radius * 1.5, shoulder.distanceTo(elbow) * 0.3, wrist.distanceTo(elbow) * 0.3);
+  const beforeElbow = elbow.clone().addScaledVector(upperDirection, -rounding);
+  const afterElbow = elbow.clone().addScaledVector(foreDirection, rounding);
+  const curve = new THREE.CurvePath();
+  curve.add(new THREE.LineCurve3(shoulder, beforeElbow));
+  curve.add(new THREE.QuadraticBezierCurve3(beforeElbow, elbow, afterElbow));
+  curve.add(new THREE.CubicBezierCurve3(afterElbow,
+    afterElbow.clone().lerp(wrist, 0.45), wrist.clone().addScaledVector(direction, -radius * 1.2), wrist));
+  const segments = 64, radialSegments = 24;
+  const geometry = new THREE.TubeGeometry(curve, segments, 1, radialSegments, false);
+  const positions = geometry.attributes.position;
+  const elbowFraction = shoulder.distanceTo(elbow) / (shoulder.distanceTo(elbow) + elbow.distanceTo(wrist));
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments, center = curve.getPointAt(t);
+    const width = t < elbowFraction ? THREE.MathUtils.lerp(1.2, 1, t / elbowFraction) :
+      THREE.MathUtils.lerp(1, 0.63, (t - elbowFraction) / (1 - elbowFraction));
+    for (let j = 0; j <= radialSegments; j++) {
+      const index = i * (radialSegments + 1) + j;
+      const p = new THREE.Vector3().fromBufferAttribute(positions, index).sub(center).multiplyScalar(radius * width).add(center);
+      positions.setXYZ(index, p.x, p.y, p.z);
+    }
+  }
+  geometry.computeVertexNormals();
   const arm = new THREE.Mesh(geometry, material);
-  arm.position.copy(wrist).add(elbow).multiplyScalar(0.5);
-  arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
   const cuff = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.73, radius * 0.73, radius * 0.52, 24),
     new THREE.MeshStandardMaterial({ color: '#252d27', roughness: 0.95 }));
   cuff.position.copy(wrist).addScaledVector(direction, -radius * 0.3);
-  cuff.quaternion.copy(arm.quaternion);
+  cuff.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
   const group = new THREE.Group(); group.add(arm, cuff);
-  if (shoulder) {
-    const upperDirection = elbow.clone().sub(shoulder);
-    const upper = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.2, upperDirection.length(), 24, 6), material);
-    upper.position.copy(elbow).add(shoulder).multiplyScalar(0.5);
-    upper.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upperDirection.normalize());
-    const joint = new THREE.Mesh(new THREE.SphereGeometry(radius, 24, 16), material);
-    joint.position.copy(elbow);
-    group.add(upper, joint);
-  }
   return group;
 }

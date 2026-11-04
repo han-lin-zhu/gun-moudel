@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { prepareHand } from '../src/hand-rig.js';
+import { prepareHand, createForearm } from '../src/hand-rig.js';
 import { firstPersonProfiles, firstPersonRecoil, lookAngles } from '../src/first-person-config.js';
 
 test('mouse observation clamps pitch without limiting horizontal turns', () => {
@@ -30,11 +30,39 @@ test('gun profiles face forward and both arms share a reversible recoil transfor
   }
 });
 
+test('close grips keep wrists neutral and sleeves follow the hand without sharp disconnected joints', () => {
+  for (const profile of Object.values(firstPersonProfiles)) {
+    const transform = new THREE.Matrix4().compose(new THREE.Vector3(...profile.position),
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(...profile.rotation)), new THREE.Vector3().setScalar(profile.scale));
+    for (const side of ['left', 'right']) {
+      const wrist = new THREE.Vector3(...profile[side].wrist).applyMatrix4(transform);
+      const elbow = new THREE.Vector3(...profile.elbows[side]), shoulder = new THREE.Vector3(...profile.shoulders[side]);
+      const palm = new THREE.Vector3(0, 1, 0).applyEuler(new THREE.Euler(...profile[side].rotation)).transformDirection(transform);
+      assert.ok(wrist.clone().sub(elbow).angleTo(palm) < Math.PI / 6, 'wrist bend must stay below 30 degrees');
+      assert.ok(wrist.distanceTo(elbow) > 0.22 && wrist.distanceTo(elbow) < 0.38, 'forearm must retain a plausible length');
+      assert.ok(-wrist.z < (side === 'right' ? 0.4 : 0.63), 'grip must stay close to the body');
+      const material = new THREE.MeshStandardMaterial();
+      const sleeve = createForearm(wrist, elbow, 0.043, material, shoulder, palm);
+      const geometry = sleeve.children[0].geometry, path = geometry.parameters.path;
+      assert.ok(path.getTangentAt(1).dot(palm) > 0.99, 'sleeve must join the cuff along the palm axis');
+      for (const attribute of ['position', 'normal']) assert.ok(Array.from(geometry.attributes[attribute].array).every(Number.isFinite));
+      for (let i = 0; i <= 64; i++) {
+        const center = path.getPointAt(i / 64);
+        const surface = new THREE.Vector3().fromBufferAttribute(geometry.attributes.position, i * 25);
+        assert.ok(surface.distanceTo(center) < 0.06, 'sleeve must not bulge at the elbow');
+      }
+      sleeve.traverse(node => { if (node.isMesh) { node.geometry.dispose(); if (node.material !== material) node.material.dispose(); } });
+      material.dispose();
+    }
+  }
+});
+
 for (const side of ['left', 'right']) test(`${side} GLB keeps bone lengths and valid skinning when gripping and pulling the trigger`, async () => {
   const bytes = await readFile(new URL(`../public/models/hands/${side}.glb`, import.meta.url));
   const gltf = await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
   const hand = prepareHand(gltf.scene, side, new THREE.MeshStandardMaterial());
   const chains = ['index-finger', 'middle-finger', 'ring-finger', 'pinky-finger'].map(name => ['proximal', 'intermediate', 'distal'].map(suffix => `${name}-phalanx-${suffix}`).concat(`${name}-tip`));
+  chains.push(['thumb-metacarpal', 'thumb-phalanx-proximal', 'thumb-phalanx-distal', 'thumb-tip']);
   const lengths = chains.map(chain => chain.slice(1).map((name, i) => hand.bones[name].position.distanceTo(hand.bones[chain[i]].position)));
   let mesh; gltf.scene.traverse(node => { if (node.isSkinnedMesh) mesh = node; });
   assert.ok(mesh && Object.keys(hand.bones).length === 25);

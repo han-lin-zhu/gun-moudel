@@ -60,7 +60,8 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
       weapon.add(hand.root); hand.pose({ support: side === 'left', rifle: id === 'ak47' });
       const elbow = new THREE.Vector3(...profile.elbows[side]).applyMatrix4(cameraToGun);
       const shoulder = new THREE.Vector3(...profile.shoulders[side]).applyMatrix4(cameraToGun);
-      arms.add(createForearm(new THREE.Vector3(...pose.wrist), elbow, 0.043 / profile.scale, sleeve, shoulder));
+      const wristDirection = new THREE.Vector3(0, 1, 0).applyEuler(hand.root.rotation);
+      arms.add(createForearm(new THREE.Vector3(...pose.wrist), elbow, 0.043 / profile.scale, sleeve, shoulder, wristDirection));
     }
     weapon.add(arms);
     document.querySelector('#fp-model-name').textContent = archives[id].title;
