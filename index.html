@@ -37,6 +37,7 @@
             <button class="view-button" data-view="side" aria-pressed="false"><span>02</span> 侧面 <b>→</b></button>
             <button class="view-button" data-view="top" aria-pressed="false"><span>03</span> 俯视 <b>↓</b></button>
             <button class="view-button" data-view="muzzle" aria-pressed="false"><span>04</span> 枪口特写 <b>◎</b></button>
+            <button id="first-person" class="view-button" aria-pressed="false"><span>05</span> 第一人称 <b>↗</b></button>
           </div>
           <button id="rotate" class="rotate-button" aria-pressed="false"><span>↻</span> 自动旋转 <i></i></button>
         </aside>
@@ -62,6 +63,11 @@
           <button id="reset" class="reset-button"><span>↺</span> 重置视角</button>
         </footer>
       </main>
+      <section id="fp-hud" aria-label="第一人称控制" hidden>
+        <div class="fp-topbar"><div><span class="fp-eyebrow">FORM ARCHIVE / FIRST PERSON</span><h2 id="fp-model-name">AK—47</h2><p id="fp-grip-name">步枪 · 护木支撑</p></div><div class="fp-actions"><button data-open-catalog>更换枪械 ↗</button><button id="fp-exit">退出第一人称 ×</button></div></div>
+        <div class="fp-reticle" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="fp-bottom"><div><span class="fp-eyebrow">右手主握 / 双手持枪</span><p id="fp-control-hint">点击画面捕获鼠标 · 左键开火</p></div><div class="fp-counter"><strong id="fp-shot-count">000</strong><span>射击次数 / HIP FIRE</span></div></div>
+      </section>
       <div class="page-footer"><span>FORM, MATERIAL & PERSPECTIVE.</span><button id="export">下载模型 ↓</button><span>为观察而造 <span class="footer-plus">＋</span></span></div>
     </div>
     <dialog id="catalog-dialog" aria-labelledby="catalog-title">

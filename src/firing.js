@@ -67,6 +67,10 @@ export function createFiringExperience({ scene, rifle }) {
   let volume = 0.4, pitch = 1, soundStyle = 'classic';
   let muted = false, shots = 0, recoilAge = Infinity;
   let shotStrength = 1;
+  let recoilHandler = null;
+  const worldQuaternion = new THREE.Quaternion();
+  const worldScale = new THREE.Vector3();
+  let effectScale = 1;
   const cameraOffset = new THREE.Vector3();
   const muzzleLocal = new THREE.Vector3(4.46, -0.025, 0);
   const muzzleWorld = new THREE.Vector3();
@@ -133,18 +137,21 @@ export function createFiringExperience({ scene, rifle }) {
   function fire() {
     recoilAge = 0; shotStrength = 0.9 + Math.random() * 0.2;
     count.textContent = `${String(++shots).padStart(3, '0')} 次`;
+    document.querySelector('#fp-shot-count').textContent = String(shots).padStart(3, '0');
     button.classList.add('firing'); button.dataset.shots = String(shots);
     flashRoll.setFromAxisAngle(forwardAxis, Math.random() * Math.PI);
     rifle.updateWorldMatrix(true, false); muzzleWorld.copy(muzzleLocal).applyMatrix4(rifle.matrixWorld);
+    rifle.getWorldQuaternion(worldQuaternion);
+    effectScale = rifle.getWorldScale(worldScale).x;
     for (let i = 0; i < 14; i++) {
       const spark = sparks[sparkCursor++ % sparkCount];
       spark.position.copy(muzzleWorld); spark.age = 0; spark.life = 0.16 + Math.random() * 0.2;
-      spark.velocity.set(3 + Math.random() * 6, (Math.random() - 0.35) * 3.4, (Math.random() - 0.5) * 3.6).applyQuaternion(rifle.quaternion);
+      spark.velocity.set(3 + Math.random() * 6, (Math.random() - 0.35) * 3.4, (Math.random() - 0.5) * 3.6).multiplyScalar(effectScale).applyQuaternion(worldQuaternion);
     }
     for (let i = 0; i < 3; i++) {
       const puff = smoke[smokeCursor++ % smoke.length];
       puff.sprite.position.copy(muzzleWorld); puff.age = 0; puff.life = 0.65 + Math.random() * 0.4;
-      puff.velocity.set(0.55 + Math.random() * 0.4, 0.22 + Math.random() * 0.3, (Math.random() - 0.5) * 0.25);
+      puff.velocity.set(0.55 + Math.random() * 0.4, 0.22 + Math.random() * 0.3, (Math.random() - 0.5) * 0.25).multiplyScalar(effectScale).applyQuaternion(worldQuaternion);
     }
     void playSound();
   }
@@ -216,10 +223,13 @@ export function createFiringExperience({ scene, rifle }) {
     const t = recoilAge;
     const impulse = Number.isFinite(t) ? (1 - Math.exp(-t * 120)) * Math.exp(-t * 13) * shotStrength : 0;
     const motion = reducedMotion.matches ? 0.18 : 1;
-    rifle.position.x = -0.32 * impulse * motion;
-    rifle.position.y = 0.035 * impulse * motion;
-    rifle.rotation.z = 0.065 * impulse * motion;
-    rifle.rotation.y = Math.sin(t * 58) * impulse * 0.009 * motion || 0;
+    if (recoilHandler) recoilHandler(impulse, reducedMotion.matches);
+    else {
+      rifle.position.x = -0.32 * impulse * motion;
+      rifle.position.y = 0.035 * impulse * motion;
+      rifle.rotation.z = 0.065 * impulse * motion;
+      rifle.rotation.y = Math.sin(t * 58) * impulse * 0.009 * motion || 0;
+    }
     cameraOffset.set(Math.sin(t * 105) * 0.026 * impulse * motion || 0, Math.sin(t * 87) * 0.018 * impulse * motion || 0, 0);
     if (t > 0.35) button.classList.remove('firing');
 
@@ -227,11 +237,13 @@ export function createFiringExperience({ scene, rifle }) {
     flash.visible = t < flashDuration;
     if (flash.visible) {
       rifle.updateWorldMatrix(true, false); flash.position.copy(muzzleLocal).applyMatrix4(rifle.matrixWorld);
-      flash.quaternion.copy(rifle.quaternion).multiply(flashRoll);
+      rifle.getWorldQuaternion(worldQuaternion);
+      effectScale = rifle.getWorldScale(worldScale).x;
+      flash.quaternion.copy(worldQuaternion).multiply(flashRoll);
       const pulse = (1 - t / flashDuration) * shotStrength;
-      flash.scale.setScalar(0.7 + pulse * 0.65);
+      flash.scale.setScalar((0.7 + pulse * 0.65) * effectScale);
       flameMaterial.opacity = Math.min(1, pulse * 2);
-      light.position.copy(flash.position); light.intensity = pulse * 28;
+      light.position.copy(flash.position); light.distance = 7 * effectScale; light.intensity = pulse * 28 * effectScale * effectScale;
     } else light.intensity = 0;
 
     let visibleSparks = false;
@@ -255,16 +267,22 @@ export function createFiringExperience({ scene, rifle }) {
       if (!puff.sprite.visible) continue;
       const life = puff.age / puff.life;
       puff.sprite.position.addScaledVector(puff.velocity, delta);
-      puff.sprite.scale.setScalar(0.13 + life * 0.85);
+      puff.sprite.scale.setScalar((0.13 + life * 0.85) * effectScale);
       puff.sprite.material.opacity = Math.sin(life * Math.PI) * 0.38;
       puff.sprite.material.rotation += delta * 0.25;
     }
   }
-  return { update, cameraOffset, setModel(model, muzzle) {
+  return { update, cameraOffset, startFiring: () => hold.start(), stopFiring,
+    setRecoilHandler(handler) {
+      stopFiring(); recoilHandler = handler; recoilAge = Infinity;
+      rifle.position.set(0, 0, 0); rifle.rotation.set(0, 0, 0);
+    },
+    setModel(model, muzzle) {
     stopFiring();
     rifle.position.set(0, 0, 0); rifle.rotation.set(0, 0, 0);
     rifle = model; muzzleLocal.copy(muzzle); recoilAge = Infinity;
     shots = 0; count.textContent = '000 次'; button.dataset.shots = '0';
+    document.querySelector('#fp-shot-count').textContent = '000';
     flash.visible = false; light.intensity = 0; cameraOffset.set(0, 0, 0);
     button.classList.remove('firing');
     for (const spark of sparks) spark.age = 9;

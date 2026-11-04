@@ -6,7 +6,9 @@ import { createM1913 } from './m1913.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { catalog, setupCatalog } from './catalog.js';
 import { createAgedSurface } from './surface.js';
+import { createFirstPerson } from './first-person.js';
 import './style.css';
+import './first-person.css';
 
 const viewport = document.querySelector('#viewport');
 const scene = new THREE.Scene();
@@ -137,11 +139,16 @@ function screw(x, y, z, radius = 0.037) {
 }
 
 // Walnut buttstock, stamped steel heel and neck collar.
+const stockStart = rifle.children.length;
 profile([[-4.16, 0.16], [-3.83, 0.22], [-2.23, 0.24], [-1.85, 0.15], [-1.85, -0.18], [-2.25, -0.3], [-3.88, -0.77], [-4.16, -0.7]], 0.38, wood, 0.065).name = 'Walnut stock';
 profile([[-4.23, 0.17], [-4.13, 0.17], [-4.13, -0.72], [-4.23, -0.72]], 0.43, darkMetal, 0.035);
 box(0.17, 0.37, 0.43, -1.91, 0.005, 0, metal);
 for (const z of [-0.215, 0.215]) { screw(-2.23, 0.02, z, 0.043); screw(-3.97, -0.3, z, 0.027); }
 lineTube([[-3.68, -0.66, 0], [-3.72, -0.78, 0], [-3.49, -0.77, 0], [-3.45, -0.65, 0]], 0.026, edgeMetal);
+const shoulderStock = new THREE.Group(); shoulderStock.name = 'Shoulder stock';
+shoulderStock.userData.hideInFirstPerson = true;
+for (const part of rifle.children.slice(stockStart)) shoulderStock.add(part);
+rifle.add(shoulderStock);
 
 // Receiver and rounded dust cover.
 profile([[-1.86, 0.22], [-1.57, 0.31], [0.66, 0.31], [0.88, 0.17], [0.88, -0.23], [0.45, -0.29], [-1.86, -0.25]], 0.43, metal, 0.025).name = 'Exterior receiver';
@@ -247,6 +254,7 @@ const archives = {
 };
 let activeArchive = 'ak47';
 let currentFinish = 'classic';
+let firstPerson;
 
 // Ground receives soft shadows while remaining part of the neutral backdrop.
 const floor = mesh(new THREE.PlaneGeometry(200, 200), new THREE.ShadowMaterial({ color: 0x4e5741, opacity: 0.18 }), 0, -2.76, 0, scene);
@@ -263,6 +271,7 @@ function homeDistance() {
   return Math.max(14.7, 17.2 * height / width) * archives[activeArchive].distance;
 }
 function selectView(name, animate = true) {
+  if (firstPerson?.active) return;
   controls.autoRotate = false;
   document.querySelector('#rotate').setAttribute('aria-pressed', 'false');
   currentView = name;
@@ -296,6 +305,7 @@ function selectArchive(id) {
   activeArchive = id;
   const archive = archives[id];
   firing.setModel(archive.group, archive.muzzle);
+  firstPerson?.setModel(id);
   for (const [key, item] of Object.entries(archives)) item.group.visible = key === id;
   floor.position.y = archive.floor;
   document.querySelector('#model-title').innerHTML = `${archive.title}<span class="title-dot">.</span>`;
@@ -305,25 +315,36 @@ function selectArchive(id) {
   document.querySelector('.scene-caption').textContent = `三维外观研究 · ${archive.number}`;
   document.querySelector('.material-section').hidden = id !== 'ak47';
   document.querySelector('#pistol-material').hidden = id !== 'm1913';
-  document.querySelector('#viewport').setAttribute('aria-label', `可拖拽旋转、滚轮缩放的 ${archive.title} 三维外观模型`);
+  document.querySelector('#viewport').setAttribute('aria-label', firstPerson?.active ? `${archive.title} 第一人称持枪画面，点击捕获鼠标，左键射击，Esc 释放鼠标` : `可拖拽旋转、滚轮缩放的 ${archive.title} 三维外观模型`);
   modelCatalog.setActive(id);
   document.title = `${archive.title} · 形态档案`;
   document.querySelector('#app').dataset.model = id;
-  updateModelLabel(); selectView('perspective', false);
+  updateModelLabel(); if (!firstPerson?.active) selectView('perspective', false);
 }
 // Model metadata and all searchable fields have one shared registry.
 for (const item of catalog) Object.assign(archives[item.id], { title: item.title, number: item.number, year: item.year });
 const modelCatalog = setupCatalog({ onSelect: id => { selectArchive(id); history.replaceState(null, '', `#${id}`); } });
 window.addEventListener('hashchange', () => selectArchive(location.hash.slice(1)));
 
+firstPerson = createFirstPerson({ scene, camera, controls, canvas: renderer.domElement, archives, firing,
+  getActiveArchive: () => activeArchive,
+  onModeChange: (enabled, reframe = false) => {
+    transition = null; floor.visible = !enabled;
+    viewport.setAttribute('aria-label', enabled ? '第一人称持枪画面，点击捕获鼠标，左键射击，Esc 释放鼠标' : `可拖拽旋转、滚轮缩放的 ${archives[activeArchive].title} 三维外观模型`);
+    resize();
+    if (reframe) selectView(currentView, false);
+  },
+});
+
 function resize() {
   const { width, height } = viewport.getBoundingClientRect();
   camera.aspect = width / height;
   // Leave visual space for the title above and controls at the right.
-  camera.setViewOffset(width, height, width < 560 ? 0 : width * 0.055, -height * (width < 560 ? 0.08 : 0.035), width, height);
+  if (firstPerson?.active) camera.clearViewOffset();
+  else camera.setViewOffset(width, height, width < 560 ? 0 : width * 0.055, -height * (width < 560 ? 0.08 : 0.035), width, height);
   camera.updateProjectionMatrix(); renderer.setSize(width, height);
 }
-window.addEventListener('resize', () => { resize(); selectView(currentView, false); });
+window.addEventListener('resize', () => { resize(); if (!firstPerson?.active) selectView(currentView, false); });
 resize(); selectView('perspective', false);
 selectArchive(archives[location.hash.slice(1)] ? location.hash.slice(1) : 'ak47');
 const clock = new THREE.Clock();
@@ -336,14 +357,14 @@ renderer.setAnimationLoop(() => {
     controls.target.lerpVectors(transition.fromTarget, transition.toTarget, eased);
     if (t === 1) transition = null;
   }
-  controls.update(delta);
+  if (!firstPerson.active) controls.update(delta);
+  firstPerson.update(delta);
   firing.update(delta);
   // Apply a small render-only camera impulse, so OrbitControls never accumulates drift.
   const cameraOffset = firing.cameraOffset;
-  camera.position.add(cameraOffset);
-  camera.lookAt(controls.target);
+  if (!firstPerson.active) { camera.position.add(cameraOffset); camera.lookAt(controls.target); }
   renderer.render(scene, camera);
-  camera.position.sub(cameraOffset);
+  if (!firstPerson.active) camera.position.sub(cameraOffset);
 });
 document.querySelector('#loading').classList.add('ready');
 
@@ -351,6 +372,7 @@ document.querySelector('#loading').classList.add('ready');
 const exportModel = () => new Promise((resolve, reject) => {
   const exportId = activeArchive;
   const exportedRifle = archives[exportId].group.clone();
+  exportedRifle.traverse(part => { if (part.userData.hideInFirstPerson) part.visible = true; });
   exportedRifle.position.set(0, 0, 0); exportedRifle.rotation.set(0, 0, 0);
   new GLTFExporter().parse(exportedRifle, result => {
     const blob = new Blob([result], { type: 'model/gltf-binary' });
