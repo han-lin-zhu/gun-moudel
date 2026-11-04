@@ -64,7 +64,7 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
       hand.root.position.fromArray(pose.wrist); hand.root.rotation.fromArray(pose.rotation);
       hand.root.scale.setScalar(1 / profile.scale);
       weapon.add(hand.root); hand.pose({ support: side === 'left', rifle: id === 'ak47' });
-      const elbow = new THREE.Vector3(side === 'right' ? 0.40 : -0.34, -0.68, -0.06).applyMatrix4(cameraToGun);
+      const elbow = new THREE.Vector3(...profile.elbows[side]).applyMatrix4(cameraToGun);
       arms.add(createForearm(new THREE.Vector3(...pose.wrist), elbow, 0.043 / profile.scale, sleeve));
     }
     weapon.add(arms);

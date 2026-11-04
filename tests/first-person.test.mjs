@@ -17,7 +17,8 @@ test('gun profiles face forward and both arms share a reversible recoil transfor
   for (const profile of Object.values(firstPersonProfiles)) {
     const rotation = new THREE.Euler(...profile.rotation);
     const forward = new THREE.Vector3(1, 0, 0).applyEuler(rotation);
-    assert.ok(forward.dot(new THREE.Vector3(0, 0, -1)) > 0.97);
+    // Hip-fire models angle inward from the lower right instead of using an ADS axis.
+    assert.ok(forward.dot(new THREE.Vector3(0, 0, -1)) > Math.cos(25 * Math.PI / 180));
     assert.deepEqual(firstPersonRecoil(0, profile), { z: 0, pitch: 0 });
     const full = firstPersonRecoil(1, profile), reduced = firstPersonRecoil(1, profile, true);
     assert.ok(full.z > 0 && full.pitch > 0);
