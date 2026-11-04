@@ -86,4 +86,5 @@
 - 参考 CS / VALORANT 常见的右手腰射构图：枪身位于右下，枪口在准星右下方，中央视野保持开阔。采用相似构图原则，不复制游戏模型或宣称复刻其内部参数。
 - 两把枪分别下移、右移、拉远并调整朝向，增加枪身侧面的可见度，避免原先过近、过高的后部遮挡。
 - 前臂出口按枪械分别配置，随持枪位置自然落向画面下方。
+- 朝向进一步校准为主要朝正前方：步枪水平内扣约 8°，手枪约 7°，保持右下腰射位置，避免过度向准星汇聚。
 - 参考页面：https://www.gameres.com/863321.html ，检索图集：https://www.bing.com/images/search?q=counter+strike+2+valorant+rifle+hip+fire+first+person+gameplay 。
