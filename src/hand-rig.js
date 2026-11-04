@@ -97,9 +97,9 @@ export async function loadHands() {
   return { left: prepareHand(left.scene, 'left', glove), right: prepareHand(right.scene, 'right', glove) };
 }
 
-// A tapered fabric forearm extends from each GLB wrist beyond the frame. Its
+// Wrist, elbow and shoulder anchors give the sleeve a bent silhouette. Its
 // independent root can later be replaced by a full upper-arm IK chain.
-export function createForearm(wrist, elbow, radius, material) {
+export function createForearm(wrist, elbow, radius, material, shoulder) {
   const direction = wrist.clone().sub(elbow);
   const geometry = new THREE.CylinderGeometry(radius * 0.63, radius, direction.length(), 24, 8);
   const arm = new THREE.Mesh(geometry, material);
@@ -110,5 +110,14 @@ export function createForearm(wrist, elbow, radius, material) {
   cuff.position.copy(wrist).addScaledVector(direction, -radius * 0.3);
   cuff.quaternion.copy(arm.quaternion);
   const group = new THREE.Group(); group.add(arm, cuff);
+  if (shoulder) {
+    const upperDirection = elbow.clone().sub(shoulder);
+    const upper = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius * 1.2, upperDirection.length(), 24, 6), material);
+    upper.position.copy(elbow).add(shoulder).multiplyScalar(0.5);
+    upper.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), upperDirection.normalize());
+    const joint = new THREE.Mesh(new THREE.SphereGeometry(radius, 24, 16), material);
+    joint.position.copy(elbow);
+    group.add(upper, joint);
+  }
   return group;
 }

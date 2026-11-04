@@ -146,7 +146,6 @@ box(0.17, 0.37, 0.43, -1.91, 0.005, 0, metal);
 for (const z of [-0.215, 0.215]) { screw(-2.23, 0.02, z, 0.043); screw(-3.97, -0.3, z, 0.027); }
 lineTube([[-3.68, -0.66, 0], [-3.72, -0.78, 0], [-3.49, -0.77, 0], [-3.45, -0.65, 0]], 0.026, edgeMetal);
 const shoulderStock = new THREE.Group(); shoulderStock.name = 'Shoulder stock';
-shoulderStock.userData.hideInFirstPerson = true;
 for (const part of rifle.children.slice(stockStart)) shoulderStock.add(part);
 rifle.add(shoulderStock);
 
@@ -372,7 +371,6 @@ document.querySelector('#loading').classList.add('ready');
 const exportModel = () => new Promise((resolve, reject) => {
   const exportId = activeArchive;
   const exportedRifle = archives[exportId].group.clone();
-  exportedRifle.traverse(part => { if (part.userData.hideInFirstPerson) part.visible = true; });
   exportedRifle.position.set(0, 0, 0); exportedRifle.rotation.set(0, 0, 0);
   new GLTFExporter().parse(exportedRifle, result => {
     const blob = new Blob([result], { type: 'model/gltf-binary' });

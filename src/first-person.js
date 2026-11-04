@@ -38,11 +38,8 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
   }
   scene.add(studio);
   const sleeve = new THREE.MeshStandardMaterial({ color: '#656e53', roughness: 0.97 });
-  function setShoulderParts(model, visible) {
-    model.traverse(part => { if (part.userData.hideInFirstPerson) part.visible = visible; });
-  }
   function configure(nextId) {
-    if (id) { setShoulderParts(archives[id].group, true); scene.add(archives[id].group); }
+    if (id) scene.add(archives[id].group);
     if (arms) {
       arms.traverse(node => { if (node.isMesh) { node.geometry.dispose(); if (node.material !== sleeve) node.material.dispose(); } });
       weapon.remove(arms);
@@ -52,9 +49,6 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
     weapon.position.fromArray(profile.position); weapon.rotation.fromArray(profile.rotation);
     weapon.scale.setScalar(profile.scale);
     const model = archives[id].group;
-    // The stock is against the shoulder, behind the first-person framing. Keep
-    // its full exterior mesh for the gallery/export rather than covering the hand.
-    setShoulderParts(model, false);
     model.position.set(0, 0, 0); model.rotation.set(0, 0, 0); weapon.add(model);
     arms = new THREE.Group(); arms.name = 'forearms';
     weapon.updateMatrix();
@@ -65,7 +59,8 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
       hand.root.scale.setScalar(1 / profile.scale);
       weapon.add(hand.root); hand.pose({ support: side === 'left', rifle: id === 'ak47' });
       const elbow = new THREE.Vector3(...profile.elbows[side]).applyMatrix4(cameraToGun);
-      arms.add(createForearm(new THREE.Vector3(...pose.wrist), elbow, 0.043 / profile.scale, sleeve));
+      const shoulder = new THREE.Vector3(...profile.shoulders[side]).applyMatrix4(cameraToGun);
+      arms.add(createForearm(new THREE.Vector3(...pose.wrist), elbow, 0.043 / profile.scale, sleeve, shoulder));
     }
     weapon.add(arms);
     document.querySelector('#fp-model-name').textContent = archives[id].title;
@@ -110,7 +105,6 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
     if (!active) return;
     input.pause();
     active = false;
-    setShoulderParts(archives[id].group, true);
     scene.add(archives[id].group); firing.setRecoilHandler(null); firing.setModel(archives[id].group, archives[id].muzzle);
     camera.position.copy(saved.position); camera.quaternion.copy(saved.quaternion); camera.fov = saved.fov; camera.near = saved.near;
     controls.target.copy(saved.target); controls.enabled = true; controls.autoRotate = saved.autoRotate;
