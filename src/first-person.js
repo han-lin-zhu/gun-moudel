@@ -1,14 +1,24 @@
 import * as THREE from 'three';
 import { loadHands, createForearm } from './hand-rig.js';
 import { firstPersonProfiles, lookAngles, firstPersonRecoil } from './first-person-config.js';
+import { createFirstPersonInput } from './first-person-input.js';
 
 export function createFirstPerson({ scene, camera, controls, canvas, archives, firing, getActiveArchive, onModeChange }) {
-  let active = false, hands, loading, saved, id, yaw = 0, pitch = 0, dragPointer = null, lastX = 0, lastY = 0;
+  let active = false, hands, loading, saved, id, yaw = 0, pitch = 0;
   let arms = null, time = 0;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const button = document.querySelector('#first-person');
   const hud = document.querySelector('#fp-hud');
   const hint = document.querySelector('#fp-control-hint');
+  const resumeButton = document.querySelector('#fp-resume');
+  const input = createFirstPersonInput({ canvas, isActive: () => active, firing,
+    move: (dx, dy) => { ({ yaw, pitch } = lookAngles(yaw, pitch, dx, dy)); },
+    onChange: (looking, locked) => {
+      document.body.classList.toggle('fp-locked', active && locked);
+      resumeButton.hidden = !active || looking;
+      hint.textContent = looking ? '移动鼠标转头 · 左键开火 · Esc 退出视角控制' : '视角控制已暂停 · 点击继续观察';
+    },
+  });
   // Separate observation, player translation and local gun motion. Future walking
   // changes camera position; recoil never accumulates into the observation angles.
   const viewmodelRoot = new THREE.Group(); viewmodelRoot.name = 'first-person-viewmodel';
@@ -30,11 +40,6 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
   const sleeve = new THREE.MeshStandardMaterial({ color: '#656e53', roughness: 0.97 });
   function setShoulderParts(model, visible) {
     model.traverse(part => { if (part.userData.hideInFirstPerson) part.visible = visible; });
-  }
-  function status() {
-    const locked = document.pointerLockElement === canvas;
-    document.body.classList.toggle('fp-locked', active && locked);
-    hint.textContent = locked ? '移动鼠标观察 · 左键开火 · Esc 释放鼠标' : '点击画面捕获鼠标 · 左键开火 · 拖动也可观察';
   }
   function configure(nextId) {
     if (id) { setShoulderParts(archives[id].group, true); scene.add(archives[id].group); }
@@ -99,12 +104,11 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
     hud.hidden = false; document.body.classList.add('first-person-active');
     button.textContent = '第一人称'; button.disabled = false; button.setAttribute('aria-pressed', 'true');
     canvas.tabIndex = 0; canvas.focus({ preventScroll: true });
-    status(); onModeChange(true);
+    onModeChange(true); input.resume();
   }
   function exit() {
     if (!active) return;
-    firing.stopFiring(); releasePointer();
-    if (document.pointerLockElement === canvas) document.exitPointerLock();
+    input.pause();
     active = false;
     setShoulderParts(archives[id].group, true);
     scene.add(archives[id].group); firing.setRecoilHandler(null); firing.setModel(archives[id].group, archives[id].muzzle);
@@ -119,51 +123,10 @@ export function createFirstPerson({ scene, camera, controls, canvas, archives, f
     onModeChange(false, saved.width !== window.innerWidth || saved.height !== window.innerHeight || saved.archive !== id);
     button.focus({ preventScroll: true });
   }
-  function releasePointer() {
-    if (dragPointer !== null && canvas.hasPointerCapture(dragPointer)) canvas.releasePointerCapture(dragPointer);
-    dragPointer = null; firing.stopFiring();
-  }
-  function move(dx, dy) {
-    ({ yaw, pitch } = lookAngles(yaw, pitch, dx, dy));
-  }
   button.addEventListener('click', () => { if (active) exit(); else void enter(); });
   document.querySelector('#fp-exit').addEventListener('click', exit);
-  canvas.addEventListener('pointerdown', event => {
-    if (!active || event.button !== 0 || document.querySelector('dialog[open]')) return;
-    event.preventDefault();
-    if (document.pointerLockElement !== canvas) {
-      dragPointer = event.pointerId; lastX = event.clientX; lastY = event.clientY;
-      // Pointer capture must precede pointer lock. Chromium rejects capture when
-      // a lock request is already pending; shooting must still work in either case.
-      try { canvas.setPointerCapture(event.pointerId); } catch { /* Window release/blur still stops firing. */ }
-    }
-    firing.startFiring();
-    if (event.pointerType !== 'touch' && document.pointerLockElement !== canvas) {
-      try { canvas.requestPointerLock()?.catch(() => status()); } catch { status(); }
-    }
-  });
-  document.addEventListener('mousemove', event => {
-    if (active && document.pointerLockElement === canvas) move(event.movementX, event.movementY);
-  });
-  canvas.addEventListener('pointermove', event => {
-    if (!active || dragPointer !== event.pointerId || document.pointerLockElement === canvas) return;
-    move(event.clientX - lastX, event.clientY - lastY); lastX = event.clientX; lastY = event.clientY;
-  });
-  window.addEventListener('pointerup', releasePointer);
-  canvas.addEventListener('pointercancel', releasePointer);
-  canvas.addEventListener('lostpointercapture', () => { if (document.pointerLockElement !== canvas) releasePointer(); });
-  window.addEventListener('blur', releasePointer);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) releasePointer(); });
-  document.addEventListener('pointerlockchange', () => {
-    if (document.pointerLockElement !== canvas) releasePointer();
-    else dragPointer = null;
-    status();
-  });
-  document.addEventListener('pointerlockerror', status);
-  canvas.addEventListener('contextmenu', event => { if (active) event.preventDefault(); });
-  document.querySelectorAll('[data-open-catalog]').forEach(control => control.addEventListener('click', () => {
-    releasePointer(); if (document.pointerLockElement === canvas) document.exitPointerLock();
-  }));
+  resumeButton.addEventListener('click', () => input.resume());
+  document.querySelectorAll('[data-open-catalog]').forEach(control => control.addEventListener('click', () => { if (active) input.pause(); }));
   return {
     get active() { return active; },
     setModel(nextId) { if (active) configure(nextId); },

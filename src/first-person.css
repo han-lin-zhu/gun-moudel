@@ -1,5 +1,8 @@
 .fire-panel{top:440px}
 #fp-hud[hidden]{display:none}
+#fp-resume[hidden]{display:none}
+#fp-resume{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:auto;border:1px solid #a5b197;border-radius:6px;background:#eef1e5f5;padding:20px 28px;font-size:16px;box-shadow:0 8px 35px #34422b22}
+#fp-resume span{display:block;font-size:10px;color:#66765c;white-space:nowrap;margin-top:10px}
 .first-person-active{overflow:hidden}
 .first-person-active #viewport{position:fixed;inset:0;z-index:10;background:#dce0d3}
 .first-person-active .intro,.first-person-active .view-panel,.first-person-active .fire-panel,.first-person-active .bottom-bar,.first-person-active .scene-label,.first-person-active .page-footer,.first-person-active .header{visibility:hidden}

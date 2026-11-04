@@ -315,7 +315,7 @@ function selectArchive(id) {
   document.querySelector('.scene-caption').textContent = `三维外观研究 · ${archive.number}`;
   document.querySelector('.material-section').hidden = id !== 'ak47';
   document.querySelector('#pistol-material').hidden = id !== 'm1913';
-  document.querySelector('#viewport').setAttribute('aria-label', firstPerson?.active ? `${archive.title} 第一人称持枪画面，点击捕获鼠标，左键射击，Esc 释放鼠标` : `可拖拽旋转、滚轮缩放的 ${archive.title} 三维外观模型`);
+  document.querySelector('#viewport').setAttribute('aria-label', firstPerson?.active ? `${archive.title} 第一人称持枪画面，移动鼠标转头，左键射击，Esc 退出视角控制` : `可拖拽旋转、滚轮缩放的 ${archive.title} 三维外观模型`);
   modelCatalog.setActive(id);
   document.title = `${archive.title} · 形态档案`;
   document.querySelector('#app').dataset.model = id;
@@ -330,7 +330,7 @@ firstPerson = createFirstPerson({ scene, camera, controls, canvas: renderer.domE
   getActiveArchive: () => activeArchive,
   onModeChange: (enabled, reframe = false) => {
     transition = null; floor.visible = !enabled;
-    viewport.setAttribute('aria-label', enabled ? '第一人称持枪画面，点击捕获鼠标，左键射击，Esc 释放鼠标' : `可拖拽旋转、滚轮缩放的 ${archives[activeArchive].title} 三维外观模型`);
+    viewport.setAttribute('aria-label', enabled ? '第一人称持枪画面，移动鼠标转头，左键射击，Esc 退出视角控制' : `可拖拽旋转、滚轮缩放的 ${archives[activeArchive].title} 三维外观模型`);
     resize();
     if (reframe) selectView(currentView, false);
   },
