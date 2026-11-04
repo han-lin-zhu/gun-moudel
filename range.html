@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eeece6" />
+    <meta name="description" content="5×5 矩阵随机小球靶场，自定目标数量与练习时长。" />
+    <title>矩阵靶场 · 形态档案</title>
+  </head>
+  <body class="range-page">
+    <header class="header range-header">
+      <a class="brand" href="./" aria-label="返回形态档案"><span class="brand-icon">f<span>°</span></span><span>形态档案<small>FORM ARCHIVE</small></span></a>
+      <nav class="mode-nav" aria-label="场景选择"><a href="./">模型展厅</a><a href="./range.html" aria-current="page">矩阵靶场 <span>↗</span></a></nav>
+      <div class="live"><i></i> 随机目标练习</div>
+    </header>
+    <main class="range-main">
+      <section class="range-heading" aria-labelledby="range-title">
+        <div><div class="eyebrow"><span class="orange-line"></span> FOCUS / REACT / REPEAT</div><h1 id="range-title">矩阵靶场<span class="title-dot">.</span></h1><p>在随机之间，找到你的节奏。</p></div>
+        <div class="range-index">02 <span>/ INTERACTIVE RANGE</span></div>
+      </section>
+      <div class="range-layout">
+        <section class="range-arena" aria-label="5×5 小球靶场">
+          <div class="arena-topline"><span><i></i> <span id="range-state">等待开始</span></span><span>GRID 05 × 05</span></div>
+          <div class="range-stats" aria-label="实时成绩">
+            <div class="timer-stat"><span>剩余时间</span><strong id="range-time">01:00</strong></div>
+            <div><span>命中</span><strong id="range-hits">0</strong></div>
+            <div><span>射击</span><strong id="range-shots">0</strong></div>
+            <div><span>命中率</span><strong id="range-accuracy">—</strong></div>
+          </div>
+          <div class="board-wrap">
+            <div id="range-board" class="range-board" aria-label="5 行 5 列目标区"></div>
+            <div id="range-overlay" class="range-overlay">
+              <div class="overlay-mark" aria-hidden="true">⊕</div><h2 id="overlay-title">准备好，专注下一球。</h2>
+              <p id="overlay-description">小球依次闪出，每个停留 1～2 秒。看准时机，及时命中。</p>
+              <div id="range-result" class="range-result" hidden></div>
+              <button id="arena-start" class="range-primary">开始练习 <span>↗</span></button>
+            </div>
+          </div>
+          <div class="arena-bottomline"><span id="wave-label">等待小球出现</span><span>点击小球命中 · 点击空白记为未命中</span></div>
+          <div class="time-track" aria-hidden="true"><div id="range-progress"></div></div>
+        </section>
+        <aside class="range-settings" aria-label="练习设置">
+          <div class="panel-label">练习设置 <span>SETUP</span></div>
+          <fieldset id="range-options">
+            <legend class="sr-only">目标数量与时长</legend>
+            <label class="range-setting" for="target-limit"><span>同时出现上限 <output id="target-limit-value" for="target-limit">3 个</output></span><input id="target-limit" type="range" min="1" max="5" step="1" value="3" /><span class="setting-scale"><span>1 个</span><span>5 个</span></span></label>
+            <label class="range-setting" for="range-duration"><span>练习总时长 <output id="duration-value" for="range-duration">1 分钟</output></span><select id="range-duration"><option value="0.5">0.5 分钟 · 30 秒</option><option value="1" selected>1 分钟 · 60 秒</option><option value="1.5">1.5 分钟 · 90 秒</option><option value="2">2 分钟 · 120 秒</option><option value="2.5">2.5 分钟 · 150 秒</option><option value="3">3 分钟 · 180 秒</option></select></label>
+          </fieldset>
+          <div class="range-rule"><span class="rule-number">01 / 依次闪出</span><p id="target-rule">小球按随机间隔依次闪出，同时最多 3 个，格位不重复。</p><span class="rule-number">02 / 限时命中</span><p>每个小球随机停留 1～2 秒，外圈表示剩余时间。超时自动消失，后续小球持续出现，无需清空当前目标。</p></div>
+          <button id="range-toggle" class="range-primary">开始练习 <span>↗</span></button>
+          <button id="range-end" class="range-secondary" disabled>结束本次练习</button>
+          <p class="range-settings-note">练习中设置锁定。切换窗口或页面时自动暂停，返回后点击继续。</p>
+          <div class="range-detail"><span>矩阵规格</span><strong>5 × 5</strong><span>当前目标</span><strong id="active-targets">—</strong></div>
+        </aside>
+      </div>
+      <p class="range-footnote" id="range-announcement" role="status">无需移动视角，使用鼠标或触屏点击小球即可。</p>
+    </main>
+    <footer class="page-footer"><span>FORM, MATERIAL & PERSPECTIVE.</span><a href="./">返回模型展厅 ↗</a><span>专注每一次命中 <span class="footer-plus">＋</span></span></footer>
+    <script type="module" src="/src/range.js"></script>
+  </body>
+</html>

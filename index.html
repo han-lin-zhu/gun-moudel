@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#eeece6" />
+    <meta name="description" content="AK-47 三维外观研究。旋转、缩放，探索经典轮廓与木材质感。" />
+    <title>AK–47 · 形态档案</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <a class="brand" href="./" aria-label="形态档案首页"><span class="brand-icon">f<span>°</span></span><span>形态档案<small>FORM ARCHIVE</small></span></a>
+        <nav class="gallery-nav" aria-label="场景选择"><button data-open-catalog>枪械目录 <span data-catalog-total>02</span></button><a href="./range.html">矩阵靶场 ↗</a></nav>
+        <div class="live"><i></i> 交互式 3D 展厅</div>
+      </header>
+
+      <main>
+        <section class="intro" aria-labelledby="model-title">
+          <div class="eyebrow"><span class="orange-line"></span> THE CLASSIC COLLECTION</div>
+          <h1 id="model-title">AK<span class="title-dash">—</span>47<span class="title-dot">.</span></h1>
+          <p class="subtitle">经典轮廓，换一个角度。</p>
+          <p class="description">木与钢的鲜明对比，极具辨识度的弧线。<br>在三维空间中，重新观察这件经典设计。</p>
+          <div class="intro-meta"><span>1947</span><span>外观研究</span><span>NO. 001</span></div>
+          <div class="archive-switch"><button data-open-catalog><small>目录</small> 浏览全部枪械 <b>↗</b></button><span id="archive-current">001 / AK–47</span></div>
+        </section>
+
+        <div id="viewport" role="img" aria-label="可用鼠标拖拽旋转、滚轮缩放的 AK-47 三维外观模型"></div>
+        <div class="scene-label"><span class="crosshair">+</span><span id="model-label">AK–47 / CLASSIC WOOD</span><span class="scene-caption">三维外观研究 · 001</span></div>
+        <div id="loading"><span></span> 正在布置展厅</div>
+        <div id="error" hidden>三维画面加载失败，请使用支持 WebGL 的浏览器后刷新页面。</div>
+
+        <aside class="view-panel" aria-label="视角控制">
+          <div class="panel-label">选择视角 <span>VIEW</span></div>
+          <div class="view-buttons">
+            <button class="view-button active" data-view="perspective" aria-pressed="true"><span>01</span> 透视 <b>↗</b></button>
+            <button class="view-button" data-view="side" aria-pressed="false"><span>02</span> 侧面 <b>→</b></button>
+            <button class="view-button" data-view="top" aria-pressed="false"><span>03</span> 俯视 <b>↓</b></button>
+            <button class="view-button" data-view="muzzle" aria-pressed="false"><span>04</span> 枪口特写 <b>◎</b></button>
+            <button id="first-person" class="view-button" aria-pressed="false"><span>05</span> 第一人称 <b>↗</b></button>
+          </div>
+          <button id="rotate" class="rotate-button" aria-pressed="false"><span>↻</span> 自动旋转 <i></i></button>
+        </aside>
+
+        <aside class="fire-panel" aria-label="开火体验">
+          <div class="panel-label">动态体验 <span>EXPERIENCE</span></div>
+          <button id="fire" class="fire-button" aria-label="开火，长按持续开火" aria-describedby="fire-help"><span class="fire-symbol">✧</span><span>开火<small>点按单发 · 长按连发</small></span><b>↗</b></button>
+          <div class="fire-options"><button id="mute" aria-pressed="false" aria-label="静音">声音 · 开</button><span id="shot-count">000 次</span></div>
+          <p id="fire-help">按住持续开火，松开即停止。</p>
+          <div class="firing-controls">
+            <label class="fire-setting" for="fire-rate"><span>开火频率 <output id="rate-value" for="fire-rate">600 发/分钟</output></span><input id="fire-rate" type="range" min="120" max="1200" step="60" value="600" /></label>
+            <label class="fire-setting" for="sound-style"><span>枪声音色</span><select id="sound-style"><option value="classic">经典 · 均衡</option><option value="heavy">厚重 · 低沉</option><option value="crisp">清脆 · 明亮</option></select></label>
+            <label class="fire-setting" for="sound-volume"><span>音量 <output id="volume-value" for="sound-volume">40%</output></span><input id="sound-volume" type="range" min="0" max="100" step="5" value="40" /></label>
+            <label class="fire-setting" for="sound-pitch"><span>音调 <output id="pitch-value" for="sound-pitch">1.00×</output></span><input id="sound-pitch" type="range" min="0.7" max="1.3" step="0.05" value="1" /></label>
+          </div>
+          <p id="sound-status" role="status">合成音效 · 可自由调节</p>
+        </aside>
+
+        <footer class="bottom-bar">
+          <div id="pistol-material" hidden><div class="panel-label">材质档案 <span>MATERIAL</span></div><p>岁月钢色 <span>／</span> 纵纹深色握把</p></div>
+          <div class="material-section"><div class="panel-label">木材饰面 <span>FINISH</span></div><div class="swatches"><button class="swatch selected" data-finish="classic" aria-label="经典胡桃木" aria-pressed="true" style="--swatch:#9b542f"></button><button class="swatch" data-finish="dark" aria-label="深色胡桃木" aria-pressed="false" style="--swatch:#483126"></button><button class="swatch" data-finish="amber" aria-label="琥珀色木材" aria-pressed="false" style="--swatch:#c18c4c"></button><span id="finish-name">经典胡桃木</span></div></div>
+          <div class="interaction-hint"><span class="mouse-icon"></span><div>拖拽旋转 <span>·</span> 滚轮缩放<small>每一个角度，都有新的细节。</small></div></div>
+          <button id="reset" class="reset-button"><span>↺</span> 重置视角</button>
+        </footer>
+      </main>
+      <section id="fp-hud" aria-label="第一人称控制" hidden>
+        <div class="fp-topbar"><div><span class="fp-eyebrow">FORM ARCHIVE / FIRST PERSON</span><h2 id="fp-model-name">AK—47</h2><p id="fp-grip-name">步枪 · 护木支撑</p></div><div class="fp-actions"><button data-open-catalog>更换枪械 ↗</button><button id="fp-exit">退出第一人称 ×</button></div></div>
+        <div class="fp-reticle" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <button id="fp-resume" hidden>继续观察<span>移动鼠标转头 · Esc 退出视角控制</span></button>
+        <div class="fp-bottom"><div><span class="fp-eyebrow">右手主握 / 双手持枪</span><p id="fp-control-hint">移动鼠标转头 · 左键开火 · Esc 退出视角控制</p></div><div class="fp-counter"><strong id="fp-shot-count">000</strong><span>射击次数 / HIP FIRE</span></div></div>
+      </section>
+      <div class="page-footer"><span>FORM, MATERIAL & PERSPECTIVE.</span><button id="export">下载模型 ↓</button><span>为观察而造 <span class="footer-plus">＋</span></span></div>
+    </div>
+    <dialog id="catalog-dialog" aria-labelledby="catalog-title">
+      <div class="catalog-heading"><div><div class="eyebrow">FORM ARCHIVE / COLLECTION</div><h2 id="catalog-title">枪械目录<span>.</span></h2><p>按名称、编号、年代或类型，找到你的下一件藏品。</p></div><button id="catalog-close" aria-label="关闭枪械目录">×</button></div>
+      <div class="catalog-toolbar"><label class="catalog-search-wrap"><span>⌕</span><input id="catalog-search" type="search" placeholder="搜索型号、编号、年代…" aria-label="搜索枪械" /></label><select id="catalog-category" aria-label="筛选枪械类型"><option value="all">全部类型</option><option value="手枪">手枪</option><option value="步枪">步枪</option></select><select id="catalog-sort" aria-label="目录排序"><option value="number">档案编号</option><option value="name">型号名称</option><option value="year">年代顺序</option></select></div>
+      <div class="catalog-summary"><span id="catalog-count" role="status"></span><button id="catalog-clear">清空筛选</button></div>
+      <div id="catalog-results"></div><div id="catalog-empty" hidden><strong>没有找到匹配的枪械</strong><p>试试型号的一部分，或清空筛选重新浏览。</p></div>
+      <div class="catalog-footer">持续收录 · 探索每一件设计的轮廓与材质</div>
+    </dialog>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
